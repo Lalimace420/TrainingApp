@@ -132,7 +132,6 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-import { supabase } from '../supabase'
 
 export default {
   name: 'ProgressChart',
@@ -200,24 +199,22 @@ export default {
     })
 
     // Méthodes
-    const loadWeightEntries = async () => {
+    const loadWeightEntries = () => {
       try {
-        const { data, error } = await supabase
-          .from('weight_entries')
-          .select('*')
-          .eq('user_id', props.userId)
-          .order('date', { ascending: true })
+        const allEntries = JSON.parse(localStorage.getItem('weight_entries') || '{}')
+        const userEntries = allEntries[props.userId] || []
 
-        if (error) throw error
+        // Trier par date
+        const sortedEntries = userEntries.sort((a, b) => new Date(a.date) - new Date(b.date))
 
         // Calculer les différences
-        weightEntries.value = data.map((entry, index) => {
+        weightEntries.value = sortedEntries.map((entry, index) => {
           if (index === 0) {
             return { ...entry, difference: null }
           }
           return {
             ...entry,
-            difference: entry.weight - data[index - 1].weight
+            difference: entry.weight - sortedEntries[index - 1].weight
           }
         })
       } catch (err) {
@@ -225,33 +222,36 @@ export default {
       }
     }
 
-    const addWeightEntry = async () => {
+    const addWeightEntry = () => {
       try {
-        const { error } = await supabase
-          .from('weight_entries')
-          .insert({
-            user_id: props.userId,
-            date: newEntry.value.date,
-            weight: newEntry.value.weight
-          })
+        // Charger toutes les entrées
+        const allEntries = JSON.parse(localStorage.getItem('weight_entries') || '{}')
+        if (!allEntries[props.userId]) {
+          allEntries[props.userId] = []
+        }
 
-        if (error) throw error
+        // Ajouter la nouvelle entrée
+        const newEntryData = {
+          id: Date.now().toString(),
+          user_id: props.userId,
+          date: newEntry.value.date,
+          weight: newEntry.value.weight
+        }
+        allEntries[props.userId].push(newEntryData)
+        localStorage.setItem('weight_entries', JSON.stringify(allEntries))
 
         // Mettre à jour le poids actuel dans le profil
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            current_weight: newEntry.value.weight,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', props.userId)
-
-        if (profileError) console.error('Error updating profile weight:', profileError)
+        const profiles = JSON.parse(localStorage.getItem('profiles') || '{}')
+        if (profiles[props.userId]) {
+          profiles[props.userId].current_weight = newEntry.value.weight
+          profiles[props.userId].updated_at = new Date().toISOString()
+          localStorage.setItem('profiles', JSON.stringify(profiles))
+        }
 
         // Émettre l'événement pour mettre à jour le profil dans App.vue
         emit('weight-updated', newEntry.value.weight)
 
-        await loadWeightEntries()
+        loadWeightEntries()
         showAddWeight.value = false
         newEntry.value = {
           date: new Date().toISOString().split('T')[0],
@@ -263,18 +263,17 @@ export default {
       }
     }
 
-    const deleteEntry = async (id) => {
+    const deleteEntry = (id) => {
       if (!confirm('Supprimer cette pesée?')) return
 
       try {
-        const { error } = await supabase
-          .from('weight_entries')
-          .delete()
-          .eq('id', id)
+        const allEntries = JSON.parse(localStorage.getItem('weight_entries') || '{}')
+        if (allEntries[props.userId]) {
+          allEntries[props.userId] = allEntries[props.userId].filter(entry => entry.id !== id)
+          localStorage.setItem('weight_entries', JSON.stringify(allEntries))
+        }
 
-        if (error) throw error
-
-        await loadWeightEntries()
+        loadWeightEntries()
       } catch (err) {
         console.error('Error deleting entry:', err)
         alert('Erreur lors de la suppression')
@@ -371,7 +370,7 @@ export default {
 
 .btn-add {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: 200% 200%;
   color: white;
   border: none;
@@ -736,7 +735,7 @@ export default {
 }
 
 .dark-mode .btn-add {
-  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 100%);
   box-shadow: 0 4px 15px rgba(84, 104, 255, 0.3);
 }
 
@@ -885,7 +884,7 @@ export default {
 }
 
 .dark-mode .btn-submit {
-  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 100%);
 }
 
 @media (max-width: 768px) {

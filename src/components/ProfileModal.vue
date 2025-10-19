@@ -76,7 +76,6 @@
 
 <script>
 import { ref, watch } from 'vue'
-import { supabase } from '../supabase'
 
 export default {
   name: 'ProfileModal',
@@ -116,40 +115,41 @@ export default {
       }
     }, { immediate: true })
 
-    const saveProfile = async () => {
+    const saveProfile = () => {
       loading.value = true
       message.value = ''
       isError.value = false
 
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error('Not authenticated')
+      setTimeout(() => {
+        try {
+          // Récupérer l'utilisateur courant
+          const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+          if (!currentUser.id) throw new Error('Non authentifié')
 
-        const { error } = await supabase
-          .from('profiles')
-          .upsert({
-            id: user.id,
+          // Sauvegarder le profil dans localStorage
+          const profiles = JSON.parse(localStorage.getItem('profiles') || '{}')
+          profiles[currentUser.id] = {
             ...profile.value,
             updated_at: new Date().toISOString()
-          })
-
-        if (error) throw error
-
-        message.value = 'Profil sauvegardé avec succès!'
-        emit('profile-updated', profile.value)
-
-        setTimeout(() => {
-          message.value = ''
-          if (!isError.value) {
-            closeModal()
           }
-        }, 1500)
-      } catch (err) {
-        message.value = err.message
-        isError.value = true
-      } finally {
-        loading.value = false
-      }
+          localStorage.setItem('profiles', JSON.stringify(profiles))
+
+          message.value = 'Profil sauvegardé avec succès!'
+          emit('profile-updated', profile.value)
+
+          setTimeout(() => {
+            message.value = ''
+            if (!isError.value) {
+              closeModal()
+            }
+          }, 1500)
+        } catch (err) {
+          message.value = err.message
+          isError.value = true
+        } finally {
+          loading.value = false
+        }
+      }, 300)
     }
 
     const closeModal = () => {
@@ -164,8 +164,7 @@ export default {
       }
     }
 
-    const handleLogout = async () => {
-      await supabase.auth.signOut()
+    const handleLogout = () => {
       emit('logout')
     }
 

@@ -511,7 +511,7 @@ export default {
 }
 
 .filter-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: 200% 200%;
   color: white;
   border-color: transparent;
@@ -717,7 +717,7 @@ export default {
 }
 
 .dark-mode .filter-btn.active {
-  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 100%);
   background-size: 200% 200%;
   color: white;
   box-shadow: 0 4px 15px rgba(84, 104, 255, 0.4);

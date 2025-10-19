@@ -147,7 +147,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: 200% 200%;
   animation: gradientShift 15s ease infinite;
   padding: 20px;
@@ -258,7 +258,7 @@ export default {
 .btn-primary {
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: 200% 200%;
   color: white;
   border: none;

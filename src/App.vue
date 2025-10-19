@@ -428,20 +428,16 @@ export default {
       return labels[goal] || 'Non défini'
     }
 
-    const handleAuthenticated = async (authenticatedUser) => {
+    const handleAuthenticated = (authenticatedUser) => {
       user.value = authenticatedUser
-      await loadUserProfile()
+      loadUserProfile()
     }
 
-    const loadUserProfile = async () => {
+    const loadUserProfile = () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.value.id)
-          .single()
-
-        if (error && error.code !== 'PGRST116') throw error
+        // Charger depuis localStorage
+        const profiles = JSON.parse(localStorage.getItem('profiles') || '{}')
+        const data = profiles[user.value.id]
 
         if (data) {
           userProfile.value = {
@@ -501,7 +497,7 @@ export default {
     }
 
     // Vérifier si l'utilisateur est déjà connecté au chargement
-    onMounted(async () => {
+    onMounted(() => {
       completedWorkouts.value = loadCompletedWorkouts()
 
       // Charger les plans hebdomadaires sauvegardés
@@ -520,7 +516,7 @@ export default {
       const savedUser = localStorage.getItem('currentUser')
       if (savedUser) {
         user.value = JSON.parse(savedUser)
-        await loadUserProfile()
+        loadUserProfile()
       }
     })
 
@@ -583,7 +579,7 @@ body {
 }
 
 header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: 200% 200%;
   animation: headerGradient 10s ease infinite;
   color: white;
@@ -764,7 +760,7 @@ main {
 }
 
 .tabs button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: 200% 200%;
   color: white;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3), 0 2px 5px rgba(118, 75, 162, 0.2);
@@ -1135,7 +1131,7 @@ main {
    ============================================ */
 
 .dark-mode header {
-  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 100%);
   background-size: 200% 200%;
   animation: headerGradient 10s ease infinite;
   box-shadow: 0 4px 25px rgba(84, 104, 255, 0.3);
@@ -1157,7 +1153,7 @@ main {
 }
 
 .dark-mode .tabs button.active {
-  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 100%);
   background-size: 200% 200%;
   color: white;
   box-shadow: 0 4px 15px rgba(84, 104, 255, 0.4);
