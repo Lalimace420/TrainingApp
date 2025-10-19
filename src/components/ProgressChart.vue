@@ -342,11 +342,13 @@ export default {
 
 <style scoped>
 .progress-container {
-  background: white;
-  border-radius: 15px;
-  padding: 25px;
-  margin-bottom: 25px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+  border-radius: 20px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08), 0 2px 5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
 }
 
 .progress-header {
@@ -358,23 +360,33 @@ export default {
 
 .progress-header h2 {
   margin: 0;
-  color: #333;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .btn-add {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-size: 200% 200%;
   color: white;
   border: none;
-  border-radius: 10px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+  letter-spacing: 0.3px;
 }
 
 .btn-add:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  background-position: 100% 0;
 }
 
 .quick-stats {
@@ -385,37 +397,94 @@ export default {
 }
 
 .stat-box {
-  background: #f9f9f9;
-  padding: 20px;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #fafbff 0%, #ffffff 100%);
+  padding: 24px;
+  border-radius: 16px;
   text-align: center;
-  border: 2px solid #e0e0e0;
+  border: 2px solid #e8ecf7;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(240, 147, 251, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.stat-box:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+  border-color: #667eea;
+}
+
+.stat-box:hover::before {
+  opacity: 1;
 }
 
 .stat-box.positive {
-  background: #e8f5e9;
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
   border-color: #4caf50;
 }
 
+.stat-box.positive::before {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.05) 100%);
+}
+
 .stat-box.negative {
-  background: #ffebee;
+  background: linear-gradient(135deg, #ffebee 0%, #fff5f5 100%);
   border-color: #f44336;
+}
+
+.stat-box.negative::before {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.08) 0%, rgba(244, 67, 54, 0.05) 100%);
 }
 
 .stat-label {
   display: block;
   font-size: 13px;
-  color: #666;
-  margin-bottom: 8px;
+  color: #777;
+  margin-bottom: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
 }
 
 .stat-value {
   display: block;
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
+  font-size: 26px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+  position: relative;
+  z-index: 1;
+}
+
+.stat-box.positive .stat-value {
+  background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-box.negative .stat-value {
+  background: linear-gradient(135deg, #c62828 0%, #f44336 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .chart-container {
@@ -650,6 +719,173 @@ export default {
 .btn-submit:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Dark Mode */
+.dark-mode .progress-container {
+  background: linear-gradient(135deg, #2a2a3a 0%, #1f1f2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .progress-header h2 {
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .btn-add {
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
+  box-shadow: 0 4px 15px rgba(84, 104, 255, 0.3);
+}
+
+.dark-mode .btn-add:hover {
+  box-shadow: 0 6px 20px rgba(84, 104, 255, 0.4);
+}
+
+.dark-mode .stat-box {
+  background: linear-gradient(135deg, #1f1f2e 0%, #252538 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark-mode .stat-box::before {
+  background: linear-gradient(135deg, rgba(84, 104, 255, 0.08) 0%, rgba(224, 86, 253, 0.08) 100%);
+}
+
+.dark-mode .stat-box:hover {
+  border-color: #5468ff;
+  box-shadow: 0 8px 30px rgba(84, 104, 255, 0.2);
+}
+
+.dark-mode .stat-box.positive {
+  background: linear-gradient(135deg, #1a3a2a 0%, #152e20 100%);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.dark-mode .stat-box.negative {
+  background: linear-gradient(135deg, #3a1a1a 0%, #2e1515 100%);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.dark-mode .stat-label {
+  color: #b0b0c0;
+}
+
+.dark-mode .stat-value {
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .stat-box.positive .stat-value {
+  background: linear-gradient(135deg, #66bb6a 0%, #81c784 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .stat-box.negative .stat-value {
+  background: linear-gradient(135deg, #ef5350 0%, #e57373 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .chart-container h3,
+.dark-mode .history-container h3 {
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .chart {
+  background: #1a1a2e;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dark-mode .grid-line {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .grid-label {
+  color: #888;
+}
+
+.dark-mode .chart-label {
+  color: #b0b0c0;
+}
+
+.dark-mode .no-data {
+  color: #888;
+}
+
+.dark-mode .history-item {
+  background: #1a1a2e;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dark-mode .history-item:hover {
+  background: #252540;
+  border-color: rgba(84, 104, 255, 0.3);
+}
+
+.dark-mode .history-date {
+  color: #b0b0c0;
+}
+
+.dark-mode .history-weight {
+  color: #e8e8f0;
+}
+
+.dark-mode .no-data-small {
+  color: #888;
+}
+
+.dark-mode .modal-overlay {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.dark-mode .modal-content {
+  background: linear-gradient(135deg, #2a2a3a 0%, #1f1f2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .modal-content h3 {
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .form-group label {
+  color: #b0b0c0;
+}
+
+.dark-mode .form-group input {
+  background: #1a1a2e;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e8e8f0;
+}
+
+.dark-mode .form-group input:focus {
+  border-color: #5468ff;
+  background: #252540;
+}
+
+.dark-mode .btn-cancel {
+  background: #3a3a4a;
+  color: #b0b0c0;
+}
+
+.dark-mode .btn-cancel:hover {
+  background: #4a4a5a;
+}
+
+.dark-mode .btn-submit {
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
 }
 
 @media (max-width: 768px) {

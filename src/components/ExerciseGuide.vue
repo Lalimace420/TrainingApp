@@ -440,15 +440,21 @@ export default {
 }
 
 .exercise-guide h2 {
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 28px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 15px;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .intro {
-  color: #666;
-  margin-bottom: 30px;
-  font-size: 16px;
+  color: #777;
+  margin-bottom: 35px;
+  font-size: 17px;
+  line-height: 1.6;
 }
 
 .search-box {
@@ -457,16 +463,25 @@ export default {
 
 .search-input {
   width: 100%;
-  padding: 15px 20px;
+  padding: 16px 24px;
   font-size: 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  transition: border-color 0.3s;
+  border: 2px solid #e8ecf7;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #fafbff 0%, #ffffff 100%);
+  font-family: inherit;
 }
 
 .search-input:focus {
   outline: none;
   border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.search-input::placeholder {
+  color: #bbb;
 }
 
 .filters {
@@ -477,25 +492,36 @@ export default {
 }
 
 .filter-btn {
-  padding: 10px 20px;
-  background: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 25px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #fafbff 0%, #ffffff 100%);
+  border: 2px solid #e8ecf7;
+  border-radius: 30px;
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-  color: #666;
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  color: #777;
+  letter-spacing: 0.3px;
 }
 
 .filter-btn:hover {
   border-color: #667eea;
   color: #667eea;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .filter-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-size: 200% 200%;
   color: white;
   border-color: transparent;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.35);
+  animation: activeFilterGradient 8s ease infinite;
+}
+
+@keyframes activeFilterGradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .exercises-list {
@@ -504,16 +530,37 @@ export default {
 }
 
 .exercise-card {
-  background: white;
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08), 0 2px 5px rgba(0, 0, 0, 0.04);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.exercise-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .exercise-card:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-5px) scale(1.01);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.exercise-card:hover::before {
+  opacity: 1;
 }
 
 .exercise-header {
@@ -627,6 +674,132 @@ export default {
   padding: 60px 20px;
   color: #999;
   font-size: 18px;
+}
+
+/* Dark Mode */
+.dark-mode .exercise-guide h2 {
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .intro {
+  color: #b0b0c0;
+}
+
+.dark-mode .search-input {
+  background: linear-gradient(135deg, #1f1f2e 0%, #252538 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e8e8f0;
+}
+
+.dark-mode .search-input:focus {
+  border-color: #5468ff;
+  background: #252540;
+  box-shadow: 0 0 0 4px rgba(84, 104, 255, 0.15);
+}
+
+.dark-mode .search-input::placeholder {
+  color: #666;
+}
+
+.dark-mode .filter-btn {
+  background: linear-gradient(135deg, #1f1f2e 0%, #252538 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #b0b0c0;
+}
+
+.dark-mode .filter-btn:hover {
+  border-color: #5468ff;
+  color: #8b9adb;
+  box-shadow: 0 4px 12px rgba(84, 104, 255, 0.2);
+}
+
+.dark-mode .filter-btn.active {
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
+  background-size: 200% 200%;
+  color: white;
+  box-shadow: 0 4px 15px rgba(84, 104, 255, 0.4);
+}
+
+.dark-mode .exercise-card {
+  background: linear-gradient(135deg, #2a2a3a 0%, #1f1f2e 100%);
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .exercise-card::before {
+  background: linear-gradient(135deg, rgba(84, 104, 255, 0.1) 0%, rgba(155, 89, 182, 0.1) 100%);
+}
+
+.dark-mode .exercise-card:hover {
+  border-color: rgba(84, 104, 255, 0.4);
+  box-shadow: 0 8px 35px rgba(84, 104, 255, 0.2);
+}
+
+.dark-mode .exercise-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .exercise-header h3 {
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .difficulty.beginner {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+}
+
+.dark-mode .difficulty.intermediate {
+  background: rgba(255, 152, 0, 0.2);
+  color: #ffb74d;
+}
+
+.dark-mode .difficulty.advanced {
+  background: rgba(244, 67, 54, 0.2);
+  color: #e57373;
+}
+
+.dark-mode .tag {
+  background: rgba(84, 104, 255, 0.2);
+  color: #8b9adb;
+}
+
+.dark-mode .muscles {
+  color: #b0b0c0;
+}
+
+.dark-mode .exercise-description h4,
+.dark-mode .exercise-tips h4,
+.dark-mode .exercise-mistakes h4 {
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark-mode .exercise-description ol,
+.dark-mode .exercise-tips ul,
+.dark-mode .exercise-mistakes ul {
+  color: #d0d0e0;
+}
+
+.dark-mode .exercise-tips {
+  background: rgba(33, 150, 243, 0.1);
+  border-left-color: #42a5f5;
+}
+
+.dark-mode .exercise-mistakes {
+  background: rgba(255, 152, 0, 0.1);
+  border-left-color: #ffa726;
+}
+
+.dark-mode .no-results {
+  color: #888;
 }
 
 @media (max-width: 768px) {
