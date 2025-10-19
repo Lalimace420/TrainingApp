@@ -512,11 +512,26 @@ export default {
         darkMode.value = true
       }
 
-      // Vérifier si un utilisateur est connecté
+      // Charger l'utilisateur connecté si présent
       const savedUser = localStorage.getItem('currentUser')
       if (savedUser) {
-        user.value = JSON.parse(savedUser)
-        loadUserProfile()
+        try {
+          const parsedUser = JSON.parse(savedUser)
+          const users = JSON.parse(localStorage.getItem('users') || '{}')
+
+          // Vérifier que l'utilisateur existe toujours
+          if (users[parsedUser.id]) {
+            user.value = parsedUser
+            loadUserProfile()
+          } else {
+            // Utilisateur n'existe plus, nettoyer tout
+            localStorage.removeItem('currentUser')
+            localStorage.removeItem('profiles')
+          }
+        } catch (e) {
+          // Données corrompues, nettoyer
+          localStorage.removeItem('currentUser')
+        }
       }
     })
 
