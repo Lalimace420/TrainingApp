@@ -1,5 +1,5 @@
 <template>
-  <div class="app">
+  <div class="app" :class="{ 'dark-mode': darkMode }">
     <!-- Afficher Auth si non connecté -->
     <Auth v-if="!user" @authenticated="handleAuthenticated" />
 
@@ -30,6 +30,9 @@
         <div class="header-top">
           <h1>Mon Plan d'Entraînement</h1>
           <div class="header-buttons">
+            <button @click="toggleDarkMode" class="btn-dark-mode" :title="darkMode ? 'Mode clair' : 'Mode sombre'">
+              {{ darkMode ? '☀️' : '🌙' }}
+            </button>
             <button @click="showProfileModal = true" class="btn-edit-profile">
               Modifier
             </button>
@@ -67,6 +70,12 @@
             :class="{ active: activeTab === 'progress' }"
           >
             Progrès
+          </button>
+          <button
+            @click="activeTab = 'exercises'"
+            :class="{ active: activeTab === 'exercises' }"
+          >
+            Exercices
           </button>
           <button
             @click="activeTab = 'meals'"
@@ -132,7 +141,13 @@
             :userId="user.id"
             :initialWeight="userProfile.current_weight"
             :targetWeight="userProfile.target_weight"
+            @weight-updated="handleWeightUpdated"
           />
+        </div>
+
+        <!-- Onglet Exercices -->
+        <div v-if="activeTab === 'exercises'" class="content">
+          <ExerciseGuide />
         </div>
 
         <!-- Onglet Repas -->
@@ -179,6 +194,7 @@ import { supabase } from './supabase'
 import Auth from './components/Auth.vue'
 import ProfileModal from './components/ProfileModal.vue'
 import ProgressChart from './components/ProgressChart.vue'
+import ExerciseGuide from './components/ExerciseGuide.vue'
 import { generateWeeklyPlan } from './workouts-data.js'
 
 export default {
@@ -186,7 +202,8 @@ export default {
   components: {
     Auth,
     ProfileModal,
-    ProgressChart
+    ProgressChart,
+    ExerciseGuide
   },
   setup() {
     const user = ref(null)
@@ -206,6 +223,7 @@ export default {
     const isFirstTimeUser = ref(false)
     const weeklyWorkouts = ref([])
     const weeklyPlans = ref({})
+    const darkMode = ref(false)
 
     // Générer ou récupérer le plan de la semaine
     const getWeeklyWorkouts = () => {
@@ -458,6 +476,15 @@ export default {
       weeklyWorkouts.value = getWeeklyWorkouts()  // Régénérer
     }
 
+    const handleWeightUpdated = (newWeight) => {
+      userProfile.value.current_weight = newWeight
+    }
+
+    const toggleDarkMode = () => {
+      darkMode.value = !darkMode.value
+      localStorage.setItem('darkMode', darkMode.value)
+    }
+
     const handleLogout = () => {
       user.value = null
       userProfile.value = {
@@ -481,6 +508,12 @@ export default {
       const savedPlans = localStorage.getItem('weeklyPlans')
       if (savedPlans) {
         weeklyPlans.value = JSON.parse(savedPlans)
+      }
+
+      // Charger le dark mode sauvegardé
+      const savedDarkMode = localStorage.getItem('darkMode')
+      if (savedDarkMode === 'true') {
+        darkMode.value = true
       }
 
       const { data: { user: currentUser } } = await supabase.auth.getUser()
@@ -510,9 +543,12 @@ export default {
       getGoalLabel,
       handleAuthenticated,
       handleProfileUpdated,
+      handleWeightUpdated,
       handleLogout,
       showProfileModal,
-      isFirstTimeUser
+      isFirstTimeUser,
+      darkMode,
+      toggleDarkMode
     }
   }
 }
@@ -528,10 +564,21 @@ export default {
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background: #f5f5f5;
+  transition: background 0.3s;
 }
 
 .app {
   min-height: 100vh;
+}
+
+/* Dark Mode */
+.dark-mode {
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.dark-mode body {
+  background: #1a1a1a;
 }
 
 header {
@@ -562,6 +609,7 @@ h1 {
   gap: 10px;
 }
 
+.btn-dark-mode,
 .btn-edit-profile,
 .btn-logout-header {
   padding: 10px 20px;
@@ -573,6 +621,17 @@ h1 {
   cursor: pointer;
   transition: all 0.3s;
   backdrop-filter: blur(10px);
+}
+
+.btn-dark-mode {
+  background: rgba(255, 255, 255, 0.15);
+  font-size: 18px;
+  padding: 10px 15px;
+}
+
+.btn-dark-mode:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
 }
 
 .btn-edit-profile {
@@ -951,6 +1010,125 @@ main {
   content: "💪";
   position: absolute;
   left: 0;
+}
+
+/* ============================================
+   DARK MODE STYLES
+   ============================================ */
+
+.dark-mode header {
+  background: linear-gradient(135deg, #4a5f9d 0%, #5a3d7a 100%);
+}
+
+.dark-mode .tabs {
+  background: #2a2a2a;
+}
+
+.dark-mode .tabs button {
+  color: #b0b0b0;
+}
+
+.dark-mode .tabs button.active {
+  background: linear-gradient(135deg, #4a5f9d 0%, #5a3d7a 100%);
+  color: white;
+}
+
+.dark-mode .week-selector {
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.dark-mode .week-selector h2 {
+  color: #e0e0e0;
+}
+
+.dark-mode .week-selector button {
+  background: #4a5f9d;
+}
+
+.dark-mode .week-selector button:hover {
+  background: #3d4f85;
+}
+
+.dark-mode .workout-card {
+  background: #2a2a2a;
+  border-color: #3a3a3a;
+}
+
+.dark-mode .workout-card.completed {
+  background: #1a3a2a;
+  border-left-color: #4caf50;
+}
+
+.dark-mode .workout-card h3 {
+  color: #e0e0e0;
+}
+
+.dark-mode .workout-duration {
+  color: #b0b0b0;
+}
+
+.dark-mode .exercises li {
+  border-bottom-color: #3a3a3a;
+  color: #d0d0d0;
+}
+
+.dark-mode .exercises h4,
+.dark-mode .cardio h4 {
+  color: #8b9adb;
+}
+
+.dark-mode .cardio p {
+  color: #d0d0d0;
+}
+
+.dark-mode .tips {
+  background: #2a2520;
+  border-left-color: #ffc107;
+  color: #e0d0a0;
+}
+
+.dark-mode .meal-intro,
+.dark-mode .meal-card,
+.dark-mode .nutrition-tips {
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.dark-mode .meal-intro h2,
+.dark-mode .meal-card h3,
+.dark-mode .nutrition-tips h3 {
+  color: #8b9adb;
+}
+
+.dark-mode .meal-intro p {
+  color: #b0b0b0;
+}
+
+.dark-mode .meal-option {
+  background: #1a1a1a;
+  border-color: #3a3a3a;
+}
+
+.dark-mode .meal-option:hover {
+  border-color: #4a5f9d;
+}
+
+.dark-mode .meal-option h4 {
+  color: #9b8fc4;
+}
+
+.dark-mode .meal-option li {
+  color: #d0d0d0;
+}
+
+.dark-mode .prep-time {
+  color: #b0b0b0;
+}
+
+.dark-mode .nutrition-tips li {
+  color: #d0d0d0;
+  border-bottom-color: #3a3a3a;
 }
 
 @media (max-width: 768px) {

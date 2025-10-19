@@ -150,7 +150,8 @@ export default {
       default: null
     }
   },
-  setup(props) {
+  emits: ['weight-updated'],
+  setup(props, { emit }) {
     const weightEntries = ref([])
     const showAddWeight = ref(false)
     const newEntry = ref({
@@ -235,6 +236,20 @@ export default {
           })
 
         if (error) throw error
+
+        // Mettre à jour le poids actuel dans le profil
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            current_weight: newEntry.value.weight,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', props.userId)
+
+        if (profileError) console.error('Error updating profile weight:', profileError)
+
+        // Émettre l'événement pour mettre à jour le profil dans App.vue
+        emit('weight-updated', newEntry.value.weight)
 
         await loadWeightEntries()
         showAddWeight.value = false
