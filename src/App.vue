@@ -190,7 +190,6 @@
 
 <script>
 import { ref, onMounted, computed, watch } from 'vue'
-import { supabase } from './supabase'
 import Auth from './components/Auth.vue'
 import ProfileModal from './components/ProfileModal.vue'
 import ProgressChart from './components/ProgressChart.vue'
@@ -486,6 +485,7 @@ export default {
     }
 
     const handleLogout = () => {
+      localStorage.removeItem('currentUser')
       user.value = null
       userProfile.value = {
         full_name: '',
@@ -516,9 +516,10 @@ export default {
         darkMode.value = true
       }
 
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (currentUser) {
-        user.value = currentUser
+      // Vérifier si un utilisateur est connecté
+      const savedUser = localStorage.getItem('currentUser')
+      if (savedUser) {
+        user.value = JSON.parse(savedUser)
         await loadUserProfile()
       }
     })
@@ -563,7 +564,7 @@ export default {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   transition: background 0.3s;
 }
 
@@ -573,20 +574,40 @@ body {
 
 /* Dark Mode */
 .dark-mode {
-  background: #1a1a1a;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
   color: #e0e0e0;
 }
 
 .dark-mode body {
-  background: #1a1a1a;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
 }
 
 header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-size: 200% 200%;
+  animation: headerGradient 10s ease infinite;
   color: white;
-  padding: 30px 20px;
+  padding: 35px 20px;
   text-align: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(102, 126, 234, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+@keyframes headerGradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .header-top {
@@ -624,14 +645,17 @@ h1 {
 }
 
 .btn-dark-mode {
-  background: rgba(255, 255, 255, 0.15);
-  font-size: 18px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 20px;
   padding: 10px 15px;
+  min-width: 50px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
 }
 
 .btn-dark-mode:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
 
 .btn-edit-profile {
@@ -665,26 +689,39 @@ h1 {
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  padding: 15px 25px;
-  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(15px);
+  padding: 18px 30px;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 150px;
+  gap: 10px;
+  min-width: 160px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .stat-label {
   font-size: 13px;
-  opacity: 0.9;
+  opacity: 0.95;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  font-weight: 600;
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 main {
@@ -695,30 +732,48 @@ main {
 
 .tabs {
   display: flex;
-  gap: 10px;
-  margin-bottom: 25px;
-  background: white;
-  padding: 10px;
-  border-radius: 15px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  gap: 12px;
+  margin-bottom: 30px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 12px;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08), 0 2px 5px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .tabs button {
   flex: 1;
-  padding: 12px 20px;
+  padding: 14px 24px;
   border: none;
   background: transparent;
-  color: #666;
+  color: #777;
   font-size: 16px;
-  font-weight: 600;
-  border-radius: 10px;
+  font-weight: 700;
+  border-radius: 14px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  position: relative;
+  letter-spacing: 0.3px;
+}
+
+.tabs button:hover:not(.active) {
+  background: rgba(102, 126, 234, 0.08);
+  color: #667eea;
+  transform: translateY(-2px);
 }
 
 .tabs button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-size: 200% 200%;
   color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3), 0 2px 5px rgba(118, 75, 162, 0.2);
+  animation: activeTabGradient 8s ease infinite;
+}
+
+@keyframes activeTabGradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .content {
@@ -734,31 +789,46 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
-  padding: 20px;
-  border-radius: 15px;
-  margin-bottom: 25px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 25px 30px;
+  border-radius: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08), 0 2px 5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .week-selector button {
-  padding: 10px 20px;
-  background: #667eea;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
-  font-weight: 600;
-  transition: background 0.3s;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+  letter-spacing: 0.3px;
 }
 
 .week-selector button:hover {
-  background: #5568d3;
+  background: linear-gradient(135deg, #5568d3 0%, #6a3f8a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(102, 126, 234, 0.35);
+}
+
+.week-selector button:active {
+  transform: translateY(0);
 }
 
 .week-selector h2 {
-  color: #333;
-  font-size: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .workouts {
@@ -767,22 +837,44 @@ main {
 }
 
 .workout-card {
-  background: white;
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-  border-left: 5px solid #667eea;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08), 0 2px 5px rgba(0, 0, 0, 0.04);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid transparent;
+  border-left: 6px solid #667eea;
+  position: relative;
+  overflow: hidden;
+}
+
+.workout-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.workout-card:hover::before {
+  opacity: 1;
 }
 
 .workout-card.completed {
   border-left-color: #4caf50;
-  background: #f1f8f4;
+  background: linear-gradient(135deg, #f1f8f4 0%, #e8f5e9 100%);
+  border-color: rgba(76, 175, 80, 0.2);
 }
 
 .workout-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
 .workout-header {
@@ -912,17 +1004,23 @@ main {
 }
 
 .meal-card {
-  background: white;
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08), 0 2px 5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .meal-card h3 {
-  color: #667eea;
-  margin-bottom: 20px;
-  font-size: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 25px;
+  font-size: 26px;
+  font-weight: 800;
   text-align: center;
+  letter-spacing: -0.5px;
 }
 
 .meal-options {
@@ -932,16 +1030,36 @@ main {
 }
 
 .meal-option {
-  background: #f9f9f9;
-  padding: 20px;
-  border-radius: 12px;
-  border: 2px solid #e0e0e0;
-  transition: all 0.3s;
+  background: linear-gradient(135deg, #fafbff 0%, #ffffff 100%);
+  padding: 24px;
+  border-radius: 16px;
+  border: 2px solid #e8ecf7;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.meal-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(240, 147, 251, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .meal-option:hover {
   border-color: #667eea;
-  transform: translateY(-2px);
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.meal-option:hover::before {
+  opacity: 1;
 }
 
 .meal-option h4 {
@@ -1017,118 +1135,161 @@ main {
    ============================================ */
 
 .dark-mode header {
-  background: linear-gradient(135deg, #4a5f9d 0%, #5a3d7a 100%);
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
+  background-size: 200% 200%;
+  animation: headerGradient 10s ease infinite;
+  box-shadow: 0 4px 25px rgba(84, 104, 255, 0.3);
 }
 
 .dark-mode .tabs {
-  background: #2a2a2a;
+  background: rgba(42, 42, 58, 0.8);
+  backdrop-filter: blur(15px);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .dark-mode .tabs button {
-  color: #b0b0b0;
+  color: #a0a0b0;
+}
+
+.dark-mode .tabs button:hover:not(.active) {
+  background: rgba(84, 104, 255, 0.15);
+  color: #8b9adb;
 }
 
 .dark-mode .tabs button.active {
-  background: linear-gradient(135deg, #4a5f9d 0%, #5a3d7a 100%);
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 50%, #e056fd 100%);
+  background-size: 200% 200%;
   color: white;
+  box-shadow: 0 4px 15px rgba(84, 104, 255, 0.4);
 }
 
 .dark-mode .week-selector {
-  background: #2a2a2a;
-  color: #e0e0e0;
+  background: rgba(42, 42, 58, 0.8);
+  backdrop-filter: blur(15px);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .dark-mode .week-selector h2 {
-  color: #e0e0e0;
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .dark-mode .week-selector button {
-  background: #4a5f9d;
+  background: linear-gradient(135deg, #5468ff 0%, #9b59b6 100%);
+  box-shadow: 0 4px 15px rgba(84, 104, 255, 0.3);
 }
 
 .dark-mode .week-selector button:hover {
-  background: #3d4f85;
+  background: linear-gradient(135deg, #6878ff 0%, #af6dca 100%);
+  box-shadow: 0 6px 20px rgba(84, 104, 255, 0.4);
 }
 
 .dark-mode .workout-card {
-  background: #2a2a2a;
-  border-color: #3a3a3a;
+  background: linear-gradient(135deg, #2a2a3a 0%, #1f1f2e 100%);
+  border-color: rgba(255, 255, 255, 0.05);
+  border-left-color: #5468ff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .workout-card::before {
+  background: linear-gradient(135deg, rgba(84, 104, 255, 0.1) 0%, rgba(155, 89, 182, 0.1) 100%);
 }
 
 .dark-mode .workout-card.completed {
-  background: #1a3a2a;
+  background: linear-gradient(135deg, #1a3a2a 0%, #152e20 100%);
   border-left-color: #4caf50;
+  border-color: rgba(76, 175, 80, 0.2);
+}
+
+.dark-mode .workout-card:hover {
+  border-color: rgba(84, 104, 255, 0.4);
+  box-shadow: 0 8px 35px rgba(84, 104, 255, 0.2);
 }
 
 .dark-mode .workout-card h3 {
-  color: #e0e0e0;
+  color: #e8e8f0;
 }
 
 .dark-mode .workout-duration {
-  color: #b0b0b0;
+  color: #b0b0c0;
 }
 
 .dark-mode .exercises li {
-  border-bottom-color: #3a3a3a;
-  color: #d0d0d0;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  color: #d0d0e0;
 }
 
 .dark-mode .exercises h4,
 .dark-mode .cardio h4 {
-  color: #8b9adb;
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .dark-mode .cardio p {
-  color: #d0d0d0;
+  color: #d0d0e0;
 }
 
 .dark-mode .tips {
-  background: #2a2520;
+  background: linear-gradient(135deg, #3a3020 0%, #2a2518 100%);
   border-left-color: #ffc107;
-  color: #e0d0a0;
+  color: #f0e0b0;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.1);
 }
 
 .dark-mode .meal-intro,
 .dark-mode .meal-card,
 .dark-mode .nutrition-tips {
-  background: #2a2a2a;
-  color: #e0e0e0;
+  background: linear-gradient(135deg, #2a2a3a 0%, #1f1f2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .dark-mode .meal-intro h2,
 .dark-mode .meal-card h3,
 .dark-mode .nutrition-tips h3 {
-  color: #8b9adb;
+  background: linear-gradient(135deg, #8b9adb 0%, #c298e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .dark-mode .meal-intro p {
-  color: #b0b0b0;
+  color: #b0b0c0;
 }
 
 .dark-mode .meal-option {
-  background: #1a1a1a;
-  border-color: #3a3a3a;
+  background: linear-gradient(135deg, #1f1f2e 0%, #252538 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark-mode .meal-option::before {
+  background: linear-gradient(135deg, rgba(84, 104, 255, 0.08) 0%, rgba(224, 86, 253, 0.08) 100%);
 }
 
 .dark-mode .meal-option:hover {
-  border-color: #4a5f9d;
+  border-color: #5468ff;
+  box-shadow: 0 8px 30px rgba(84, 104, 255, 0.2);
 }
 
 .dark-mode .meal-option h4 {
-  color: #9b8fc4;
+  color: #c298e0;
 }
 
 .dark-mode .meal-option li {
-  color: #d0d0d0;
+  color: #d0d0e0;
 }
 
 .dark-mode .prep-time {
-  color: #b0b0b0;
+  color: #b0b0c0;
 }
 
 .dark-mode .nutrition-tips li {
-  color: #d0d0d0;
-  border-bottom-color: #3a3a3a;
+  color: #d0d0e0;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 @media (max-width: 768px) {
