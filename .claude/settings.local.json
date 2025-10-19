@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create vite@latest training-app -- --template vue)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
