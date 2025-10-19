@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
       manifest: {
-        name: 'Training App - Plan d\'Entraînement',
+        name: 'Plan d\'Entraînement',
         short_name: 'Training App',
         description: 'Application d\'entraînement et de nutrition personnalisée',
         theme_color: '#4a90e2',
@@ -59,3 +59,5 @@ export default defineConfig({
     })
   ],
 })
+
+
