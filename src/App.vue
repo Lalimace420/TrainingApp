@@ -3,12 +3,23 @@
     <!-- Afficher Auth si non connecté -->
     <Auth v-if="!user" @authenticated="handleAuthenticated" />
 
-    <!-- Afficher l'app si connecté -->
-    <template v-else>
-      <!-- Modal de profil -->
+    <!-- Modal de configuration du profil pour la première fois -->
+    <ProfileModal
+      v-else-if="user && isFirstTimeUser"
+      :isOpen="true"
+      :isFirstTime="true"
+      :initialProfile="userProfile"
+      @close="() => {}"
+      @profile-updated="handleProfileUpdated"
+      @logout="handleLogout"
+    />
+
+    <!-- Afficher l'app si connecté ET profil configuré -->
+    <template v-else-if="user && !isFirstTimeUser">
+      <!-- Modal de profil (pour modifications) -->
       <ProfileModal
         :isOpen="showProfileModal"
-        :isFirstTime="isFirstTimeUser"
+        :isFirstTime="false"
         :initialProfile="userProfile"
         @close="showProfileModal = false"
         @profile-updated="handleProfileUpdated"
@@ -18,9 +29,14 @@
       <header>
         <div class="header-top">
           <h1>Mon Plan d'Entraînement</h1>
-          <button @click="showProfileModal = true" class="btn-edit-profile">
-            Modifier
-          </button>
+          <div class="header-buttons">
+            <button @click="showProfileModal = true" class="btn-edit-profile">
+              Modifier
+            </button>
+            <button @click="handleLogout" class="btn-logout-header">
+              Déconnexion
+            </button>
+          </div>
         </div>
         <div class="stats">
           <div class="stat-card">
@@ -193,6 +209,11 @@ export default {
 
     // Générer ou récupérer le plan de la semaine
     const getWeeklyWorkouts = () => {
+      // Ne pas générer si le profil n'est pas encore configuré
+      if (!userProfile.value.sessions_per_week) {
+        return []
+      }
+
       const weekKey = `week_${currentWeek.value}`
 
       // Si le plan existe déjà pour cette semaine, l'utiliser
@@ -201,7 +222,7 @@ export default {
       }
 
       // Sinon, générer un nouveau plan
-      const sessionsPerWeek = userProfile.value.sessions_per_week || 3
+      const sessionsPerWeek = userProfile.value.sessions_per_week
       const previousWeek = `week_${currentWeek.value - 1}`
       const previousWorkoutIds = weeklyPlans.value[previousWeek]?.map(w => w.id) || []
 
@@ -421,11 +442,6 @@ export default {
           // Pas de profil = première fois
           isFirstTimeUser.value = true
         }
-
-        // Afficher le modal si c'est la première fois
-        if (isFirstTimeUser.value) {
-          showProfileModal.value = true
-        }
       } catch (err) {
         console.error('Error loading profile:', err)
       }
@@ -435,6 +451,11 @@ export default {
       userProfile.value = { ...updatedProfile }
       isFirstTimeUser.value = false
       showProfileModal.value = false
+
+      // Régénérer les workouts de la semaine courante avec le nouveau nombre de séances
+      const weekKey = `week_${currentWeek.value}`
+      delete weeklyPlans.value[weekKey]  // Supprimer le plan existant
+      weeklyWorkouts.value = getWeeklyWorkouts()  // Régénérer
     }
 
     const handleLogout = () => {
@@ -523,11 +544,12 @@ header {
 
 .header-top {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  padding: 0 20px;
   margin-bottom: 25px;
   flex-wrap: wrap;
+  gap: 15px;
 }
 
 h1 {
@@ -535,9 +557,14 @@ h1 {
   font-size: 32px;
 }
 
-.btn-edit-profile {
+.header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-edit-profile,
+.btn-logout-header {
   padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.2);
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 10px;
@@ -548,8 +575,23 @@ h1 {
   backdrop-filter: blur(10px);
 }
 
+.btn-edit-profile {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .btn-edit-profile:hover {
   background: rgba(255, 255, 255, 0.3);
+  border-color: white;
+  transform: translateY(-2px);
+}
+
+.btn-logout-header {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-logout-header:hover {
+  background: rgba(244, 67, 54, 0.5);
   border-color: white;
   transform: translateY(-2px);
 }
@@ -914,6 +956,23 @@ main {
 @media (max-width: 768px) {
   h1 {
     font-size: 24px;
+  }
+
+  .header-top {
+    flex-direction: column;
+    text-align: center;
+    padding: 0;
+  }
+
+  .header-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-edit-profile,
+  .btn-logout-header {
+    flex: 1;
+    max-width: 150px;
   }
 
   .stats {
