@@ -10,9 +10,13 @@ CREATE TABLE IF NOT EXISTS profiles (
   height numeric,
   age integer,
   goal text,
+  sessions_per_week integer,
   updated_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Ajouter la colonne sessions_per_week si elle n'existe pas déjà
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS sessions_per_week integer;
 
 -- Table pour suivre les pesées hebdomadaires
 CREATE TABLE IF NOT EXISTS weight_entries (

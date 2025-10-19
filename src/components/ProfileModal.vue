@@ -47,6 +47,17 @@
           </select>
         </div>
 
+        <div class="form-group">
+          <label>Nombre de séances par semaine</label>
+          <select v-model.number="profile.sessions_per_week" required>
+            <option value="">Sélectionnez le nombre de séances</option>
+            <option value="2">2 séances / semaine</option>
+            <option value="3">3 séances / semaine</option>
+            <option value="4">4 séances / semaine</option>
+            <option value="5">5 séances / semaine</option>
+          </select>
+        </div>
+
         <button type="submit" class="btn-save" :disabled="loading">
           {{ loading ? 'Sauvegarde...' : 'Sauvegarder' }}
         </button>
@@ -91,7 +102,8 @@ export default {
       target_weight: null,
       height: null,
       age: null,
-      goal: ''
+      goal: '',
+      sessions_per_week: null
     })
     const loading = ref(false)
     const message = ref('')

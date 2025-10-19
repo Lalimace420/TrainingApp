@@ -33,7 +33,7 @@
           </div>
           <div class="stat-card">
             <span class="stat-label">Cette semaine</span>
-            <span class="stat-value">{{ completedThisWeek }}/3 séances</span>
+            <span class="stat-value">{{ completedThisWeek }} séances</span>
           </div>
         </div>
       </header>
@@ -71,12 +71,12 @@
           <div class="workouts">
             <div
               v-for="(workout, index) in workouts"
-              :key="index"
+              :key="workout.id"
               class="workout-card"
               :class="{ completed: isWorkoutCompleted(index) }"
             >
               <div class="workout-header">
-                <h3>{{ workout.day }}</h3>
+                <h3>{{ workout.dayName }} - {{ workout.name }}</h3>
                 <label class="checkbox-container">
                   <input
                     type="checkbox"
@@ -158,11 +158,12 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { supabase } from './supabase'
 import Auth from './components/Auth.vue'
 import ProfileModal from './components/ProfileModal.vue'
 import ProgressChart from './components/ProgressChart.vue'
+import { generateWeeklyPlan } from './workouts-data.js'
 
 export default {
   name: 'App',
@@ -179,58 +180,44 @@ export default {
       target_weight: null,
       height: null,
       age: null,
-      goal: ''
+      goal: '',
+      sessions_per_week: null
     })
     const activeTab = ref('training')
     const currentWeek = ref(1)
     const completedWorkouts = ref({})
     const showProfileModal = ref(false)
     const isFirstTimeUser = ref(false)
+    const weeklyWorkouts = ref([])
+    const weeklyPlans = ref({})
 
-    const workouts = [
-      {
-        day: 'Jour 1 - Corps Complet',
-        duration: '1h - 1h30',
-        exercises: [
-          { name: 'Échauffement', details: '10 min de marche rapide ou vélo' },
-          { name: 'Squats', details: '3 séries de 12 répétitions' },
-          { name: 'Pompes (sur genoux si nécessaire)', details: '3 séries de 10 répétitions' },
-          { name: 'Fentes', details: '3 séries de 10 par jambe' },
-          { name: 'Planche', details: '3 séries de 30 secondes' },
-          { name: 'Rowing avec haltères', details: '3 séries de 12 répétitions' }
-        ],
-        cardio: '15 minutes de marche rapide ou vélo',
-        tip: 'Concentre-toi sur la forme plutôt que sur le poids. Mieux vaut bien faire avec moins de poids!'
-      },
-      {
-        day: 'Jour 2 - Cardio + Abdos',
-        duration: '1h - 1h15',
-        exercises: [
-          { name: 'Échauffement', details: '5 min de marche' },
-          { name: 'Course/Marche rapide', details: '30 minutes (alterne 2 min rapide, 1 min lent)' },
-          { name: 'Crunchs', details: '3 séries de 15 répétitions' },
-          { name: 'Planche latérale', details: '3 séries de 20 sec par côté' },
-          { name: 'Mountain climbers', details: '3 séries de 20 répétitions' },
-          { name: 'Bicycle crunches', details: '3 séries de 20 répétitions' }
-        ],
-        cardio: '10 minutes de retour au calme',
-        tip: 'Le cardio est essentiel pour brûler les graisses. Ne saute pas cette séance!'
-      },
-      {
-        day: 'Jour 3 - Force + Cardio',
-        duration: '1h - 1h30',
-        exercises: [
-          { name: 'Échauffement', details: '10 min de vélo' },
-          { name: 'Développé couché ou pompes', details: '3 séries de 10 répétitions' },
-          { name: 'Squats avec poids', details: '3 séries de 12 répétitions' },
-          { name: 'Curl biceps', details: '3 séries de 12 répétitions' },
-          { name: 'Extension triceps', details: '3 séries de 12 répétitions' },
-          { name: 'Soulevé de terre (léger)', details: '3 séries de 10 répétitions' }
-        ],
-        cardio: '20 minutes de vélo ou elliptique',
-        tip: 'Repose-toi 48h entre les séances de force pour permettre aux muscles de récupérer!'
+    // Générer ou récupérer le plan de la semaine
+    const getWeeklyWorkouts = () => {
+      const weekKey = `week_${currentWeek.value}`
+
+      // Si le plan existe déjà pour cette semaine, l'utiliser
+      if (weeklyPlans.value[weekKey]) {
+        return weeklyPlans.value[weekKey]
       }
-    ]
+
+      // Sinon, générer un nouveau plan
+      const sessionsPerWeek = userProfile.value.sessions_per_week || 3
+      const previousWeek = `week_${currentWeek.value - 1}`
+      const previousWorkoutIds = weeklyPlans.value[previousWeek]?.map(w => w.id) || []
+
+      const newPlan = generateWeeklyPlan(sessionsPerWeek, previousWorkoutIds)
+      weeklyPlans.value[weekKey] = newPlan
+
+      // Sauvegarder dans localStorage
+      localStorage.setItem('weeklyPlans', JSON.stringify(weeklyPlans.value))
+
+      return newPlan
+    }
+
+    // Computed pour les workouts de la semaine actuelle
+    const workouts = computed(() => {
+      return getWeeklyWorkouts()
+    })
 
     const meals = [
       {
@@ -359,7 +346,9 @@ export default {
     // Computed
     const completedThisWeek = computed(() => {
       const weekKey = `week_${currentWeek.value}`
-      return completedWorkouts.value[weekKey]?.filter(Boolean).length || 0
+      const sessionsPerWeek = userProfile.value.sessions_per_week || 3
+      const completed = completedWorkouts.value[weekKey]?.filter(Boolean).length || 0
+      return `${completed}/${sessionsPerWeek}`
     })
 
     // Méthodes
@@ -423,10 +412,11 @@ export default {
             target_weight: data.target_weight || null,
             height: data.height || null,
             age: data.age || null,
-            goal: data.goal || ''
+            goal: data.goal || '',
+            sessions_per_week: data.sessions_per_week || null
           }
           // Si le profil n'a pas de données, c'est la première fois
-          isFirstTimeUser.value = !data.full_name || !data.goal
+          isFirstTimeUser.value = !data.full_name || !data.goal || !data.sessions_per_week
         } else {
           // Pas de profil = première fois
           isFirstTimeUser.value = true
@@ -455,7 +445,8 @@ export default {
         target_weight: null,
         height: null,
         age: null,
-        goal: ''
+        goal: '',
+        sessions_per_week: null
       }
       showProfileModal.value = false
       isFirstTimeUser.value = false
@@ -465,11 +456,22 @@ export default {
     onMounted(async () => {
       completedWorkouts.value = loadCompletedWorkouts()
 
+      // Charger les plans hebdomadaires sauvegardés
+      const savedPlans = localStorage.getItem('weeklyPlans')
+      if (savedPlans) {
+        weeklyPlans.value = JSON.parse(savedPlans)
+      }
+
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (currentUser) {
         user.value = currentUser
         await loadUserProfile()
       }
+    })
+
+    // Watcher pour regénérer les workouts quand on change de semaine ou de nombre de séances
+    watch([currentWeek, () => userProfile.value.sessions_per_week], () => {
+      weeklyWorkouts.value = getWeeklyWorkouts()
     })
 
     return {

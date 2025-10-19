@@ -77,7 +77,7 @@
 
         <!-- Labels des dates -->
         <div class="chart-labels">
-          <span v-for="(entry, index) in weightEntries" :key="'label-' + entry.id" class="chart-label">
+          <span v-for="entry in weightEntries" :key="'label-' + entry.id" class="chart-label">
             {{ formatDate(entry.date) }}
           </span>
         </div>
@@ -160,7 +160,7 @@ export default {
 
     const svgWidth = 800
     const svgHeight = 300
-    const padding = 20
+    const padding = 40
 
     // Computed
     const startWeight = computed(() => {
