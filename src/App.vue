@@ -226,8 +226,7 @@ export default {
     const darkMode = ref(false)
 
     // Générer ou récupérer le plan de la semaine
-    const getWeeklyWorkouts = () => {
-      // Ne pas générer si le profil n'est pas encore configuré
+    const getWeeklyWorkouts = async () => {
       if (!userProfile.value.sessions_per_week) {
         return []
       }
@@ -239,6 +238,23 @@ export default {
         return weeklyPlans.value[weekKey]
       }
 
+      // Essayer de charger depuis Supabase
+      try {
+        const { data, error } = await supabase
+          .from('weekly_plans')
+          .select('plan_data')
+          .eq('user_id', user.value.id)
+          .eq('week_number', currentWeek.value)
+          .single()
+
+        if (data && !error) {
+          weeklyPlans.value[weekKey] = data.plan_data
+          return data.plan_data
+        }
+      } catch (err) {
+        console.log('No saved plan, generating new one')
+      }
+
       // Sinon, générer un nouveau plan
       const sessionsPerWeek = userProfile.value.sessions_per_week
       const previousWeek = `week_${currentWeek.value - 1}`
@@ -247,8 +263,14 @@ export default {
       const newPlan = generateWeeklyPlan(sessionsPerWeek, previousWorkoutIds)
       weeklyPlans.value[weekKey] = newPlan
 
-      // Sauvegarder dans localStorage
-      localStorage.setItem('weeklyPlans', JSON.stringify(weeklyPlans.value))
+      // Sauvegarder dans Supabase
+      if (user.value) {
+        await supabase.from('weekly_plans').upsert({
+          user_id: user.value.id,
+          week_number: currentWeek.value,
+          plan_data: newPlan
+        })
+      }
 
       return newPlan
     }
@@ -391,13 +413,64 @@ export default {
     })
 
     // Méthodes
-    const loadCompletedWorkouts = () => {
-      const saved = localStorage.getItem('completedWorkouts')
-      return saved ? JSON.parse(saved) : {}
+    const loadCompletedWorkouts = async () => {
+      if (!user.value) return {}
+      
+      try {
+        const { data, error } = await supabase
+          .from('completed_workouts')
+          .select('*')
+          .eq('user_id', user.value.id)
+        
+        if (error) throw error
+        
+        // Convertir en format objet
+        const workouts = {}
+        data.forEach(item => {
+          const weekKey = `week_${item.week_number}`
+          if (!workouts[weekKey]) workouts[weekKey] = []
+          workouts[weekKey][item.workout_index] = item.completed
+        })
+        
+        return workouts
+      } catch (err) {
+        console.error('Error loading workouts:', err)
+        return {}
+      }
     }
 
-    const saveCompletedWorkouts = () => {
-      localStorage.setItem('completedWorkouts', JSON.stringify(completedWorkouts.value))
+    const saveCompletedWorkouts = async () => {
+      if (!user.value) return
+      
+      try {
+        // Supprimer tous les anciens workouts de l'utilisateur
+        await supabase
+          .from('completed_workouts')
+          .delete()
+          .eq('user_id', user.value.id)
+        
+        // Insérer les nouveaux
+        const workoutsToInsert = []
+        Object.keys(completedWorkouts.value).forEach(weekKey => {
+          const weekNumber = parseInt(weekKey.replace('week_', ''))
+          completedWorkouts.value[weekKey].forEach((completed, index) => {
+            if (completed) {
+              workoutsToInsert.push({
+                user_id: user.value.id,
+                week_number: weekNumber,
+                workout_index: index,
+                completed: true
+              })
+            }
+          })
+        })
+        
+        if (workoutsToInsert.length > 0) {
+          await supabase.from('completed_workouts').insert(workoutsToInsert)
+        }
+      } catch (err) {
+        console.error('Error saving workouts:', err)
+      }
     }
 
     const isWorkoutCompleted = (workoutIndex) => {
@@ -405,13 +478,13 @@ export default {
       return completedWorkouts.value[weekKey]?.[workoutIndex] || false
     }
 
-    const toggleWorkout = (workoutIndex) => {
+    const toggleWorkout = async (workoutIndex) => {
       const weekKey = `week_${currentWeek.value}`
       if (!completedWorkouts.value[weekKey]) {
         completedWorkouts.value[weekKey] = []
       }
       completedWorkouts.value[weekKey][workoutIndex] = !completedWorkouts.value[weekKey][workoutIndex]
-      saveCompletedWorkouts()
+      await saveCompletedWorkouts()
     }
 
     const changeWeek = (delta) => {
@@ -432,6 +505,24 @@ export default {
     const handleAuthenticated = async (authenticatedUser) => {
       user.value = authenticatedUser
       await loadUserProfile()
+      
+      // Charger les workouts complétés
+      completedWorkouts.value = await loadCompletedWorkouts()
+      
+      // Charger les préférences (dark mode)
+      try {
+        const { data } = await supabase
+          .from('user_preferences')
+          .select('dark_mode')
+          .eq('user_id', user.value.id)
+          .single()
+        
+        if (data) {
+          darkMode.value = data.dark_mode
+        }
+      } catch (err) {
+        console.log('No preferences found')
+      }
     }
 
     const loadUserProfile = async () => {
@@ -483,13 +574,18 @@ export default {
       userProfile.value.current_weight = newWeight
     }
 
-    const toggleDarkMode = () => {
+    const toggleDarkMode = async () => {
       darkMode.value = !darkMode.value
-      localStorage.setItem('darkMode', darkMode.value)
+      
+      if (user.value) {
+        await supabase.from('user_preferences').upsert({
+          user_id: user.value.id,
+          dark_mode: darkMode.value
+        })
+      }
     }
 
     const handleLogout = () => {
-      
       user.value = null
       userProfile.value = {
         full_name: '',
@@ -500,25 +596,15 @@ export default {
         goal: '',
         sessions_per_week: null
       }
+      completedWorkouts.value = {}
+      weeklyPlans.value = {}
+      darkMode.value = false
       showProfileModal.value = false
       isFirstTimeUser.value = false
     }
 
     // Vérifier si l'utilisateur est déjà connecté au chargement
     onMounted(async () => {
-      completedWorkouts.value = loadCompletedWorkouts()
-
-      // Charger les plans hebdomadaires sauvegardés
-      const savedPlans = localStorage.getItem('weeklyPlans')
-      if (savedPlans) {
-        weeklyPlans.value = JSON.parse(savedPlans)
-      }
-
-      // Charger le dark mode sauvegardé
-      const savedDarkMode = localStorage.getItem('darkMode')
-      if (savedDarkMode === 'true') {
-        darkMode.value = true
-      }
     })
 
     // Watcher pour regénérer les workouts quand on change de semaine ou de nombre de séances
