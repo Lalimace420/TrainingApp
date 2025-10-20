@@ -190,6 +190,7 @@
 
 <script>
 import { ref, onMounted, computed, watch } from 'vue'
+import { supabase } from './supabase'
 import Auth from './components/Auth.vue'
 import ProfileModal from './components/ProfileModal.vue'
 import ProgressChart from './components/ProgressChart.vue'
@@ -428,16 +429,21 @@ export default {
       return labels[goal] || 'Non défini'
     }
 
-    const handleAuthenticated = (authenticatedUser) => {
+    const handleAuthenticated = async (authenticatedUser) => {
       user.value = authenticatedUser
-      loadUserProfile()
+      await loadUserProfile()
     }
 
-    const loadUserProfile = () => {
+    const loadUserProfile = async () => {
       try {
-        // Charger depuis localStorage
-        const profiles = JSON.parse(localStorage.getItem('profiles') || '{}')
-        const data = profiles[user.value.id]
+        // Charger depuis Supabase
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.value.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') throw error
 
         if (data) {
           userProfile.value = {
@@ -457,6 +463,8 @@ export default {
         }
       } catch (err) {
         console.error('Error loading profile:', err)
+        // En cas d'erreur, considérer comme première fois
+        isFirstTimeUser.value = true
       }
     }
 
@@ -497,7 +505,7 @@ export default {
     }
 
     // Vérifier si l'utilisateur est déjà connecté au chargement
-    onMounted(() => {
+    onMounted(async () => {
       completedWorkouts.value = loadCompletedWorkouts()
 
       // Charger les plans hebdomadaires sauvegardés
@@ -517,19 +525,23 @@ export default {
       if (savedUser) {
         try {
           const parsedUser = JSON.parse(savedUser)
-          const users = JSON.parse(localStorage.getItem('users') || '{}')
 
-          // Vérifier que l'utilisateur existe toujours
-          if (users[parsedUser.id]) {
+          // Vérifier que l'utilisateur existe toujours dans Supabase
+          const { data: userData } = await supabase
+            .from('custom_users')
+            .select('id, username')
+            .eq('id', parsedUser.id)
+            .single()
+
+          if (userData) {
             user.value = parsedUser
-            loadUserProfile()
+            await loadUserProfile()
           } else {
-            // Utilisateur n'existe plus, nettoyer tout
+            // Utilisateur n'existe plus, nettoyer
             localStorage.removeItem('currentUser')
-            localStorage.removeItem('profiles')
           }
         } catch (e) {
-          // Données corrompues, nettoyer
+          // Données corrompues ou erreur, nettoyer
           localStorage.removeItem('currentUser')
         }
       }

@@ -52,6 +52,8 @@
 
 <script>
 import { ref } from 'vue'
+import { supabase } from '../supabase'
+import bcrypt from 'bcryptjs'
 
 export default {
   name: 'Auth',
@@ -64,68 +66,88 @@ export default {
     const error = ref('')
     const success = ref('')
 
-    const handleAuth = () => {
+    const handleAuth = async () => {
       loading.value = true
       error.value = ''
       success.value = ''
 
-      setTimeout(() => {
-        try {
-          if (isLogin.value) {
-            // Connexion
-            const users = JSON.parse(localStorage.getItem('users') || '{}')
+      try {
+        if (isLogin.value) {
+          // CONNEXION
+          // 1. Chercher l'utilisateur par username
+          const { data: users, error: fetchError } = await supabase
+            .from('custom_users')
+            .select('*')
+            .eq('username', username.value)
+            .single()
 
-            if (!users[username.value]) {
-              throw new Error('Ce compte n\'existe pas. Clique sur "S\'inscrire" pour créer un compte.')
-            }
-
-            if (users[username.value].password !== password.value) {
-              throw new Error('Mot de passe incorrect')
-            }
-
-            // Créer l'objet utilisateur et le sauvegarder pour la persistance
-            const user = {
-              id: username.value,
-              username: username.value
-            }
-            localStorage.setItem('currentUser', JSON.stringify(user))
-
-            emit('authenticated', user)
-          } else {
-            // Inscription
-            const users = JSON.parse(localStorage.getItem('users') || '{}')
-
-            if (users[username.value]) {
-              throw new Error('Ce nom d\'utilisateur existe déjà')
-            }
-
-            // Créer le nouveau compte
-            users[username.value] = {
-              password: password.value,
-              createdAt: new Date().toISOString()
-            }
-
-            localStorage.setItem('users', JSON.stringify(users))
-
-            success.value = 'Compte créé avec succès! Tu peux maintenant te connecter.'
-
-            // Connecter automatiquement après inscription
-            const user = {
-              id: username.value,
-              username: username.value
-            }
-            localStorage.setItem('currentUser', JSON.stringify(user))
-
-            setTimeout(() => {
-              emit('authenticated', user)
-            }, 1000)
+          if (fetchError || !users) {
+            throw new Error('Ce compte n\'existe pas. Clique sur "S\'inscrire" pour créer un compte.')
           }
-        } catch (err) {
-          error.value = err.message
-        } finally {
-          loading.value = false
+
+          // 2. Vérifier le mot de passe
+          const isPasswordValid = await bcrypt.compare(password.value, users.password_hash)
+          if (!isPasswordValid) {
+            throw new Error('Mot de passe incorrect')
+          }
+
+          // 3. Connecter l'utilisateur
+          const user = {
+            id: users.id,
+            username: users.username
+          }
+
+          // Sauvegarder en localStorage pour la persistance
+          localStorage.setItem('currentUser', JSON.stringify(user))
+
+          emit('authenticated', user)
+        } else {
+          // INSCRIPTION
+          // 1. Vérifier si le username existe déjà
+          const { data: existingUser } = await supabase
+            .from('custom_users')
+            .select('username')
+            .eq('username', username.value)
+            .single()
+
+          if (existingUser) {
+            throw new Error('Ce nom d\'utilisateur existe déjà')
+          }
+
+          // 2. Hasher le mot de passe
+          const passwordHash = await bcrypt.hash(password.value, 10)
+
+          // 3. Créer le nouveau compte
+          const { data: newUser, error: insertError } = await supabase
+            .from('custom_users')
+            .insert({
+              username: username.value,
+              password_hash: passwordHash
+            })
+            .select()
+            .single()
+
+          if (insertError) throw insertError
+
+          success.value = 'Compte créé avec succès!'
+
+          // 4. Connecter automatiquement
+          const user = {
+            id: newUser.id,
+            username: newUser.username
+          }
+
+          localStorage.setItem('currentUser', JSON.stringify(user))
+
+          setTimeout(() => {
+            emit('authenticated', user)
+          }, 1000)
         }
-      }, 300)
+      } catch (err) {
+        error.value = err.message || 'Une erreur est survenue'
+      } finally {
+        loading.value = false
+      }
     }
 
     return {

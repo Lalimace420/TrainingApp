@@ -76,6 +76,7 @@
 
 <script>
 import { ref, watch } from 'vue'
+import { supabase } from '../supabase'
 
 export default {
   name: 'ProfileModal',
@@ -115,41 +116,42 @@ export default {
       }
     }, { immediate: true })
 
-    const saveProfile = () => {
+    const saveProfile = async () => {
       loading.value = true
       message.value = ''
       isError.value = false
 
-      setTimeout(() => {
-        try {
-          // Récupérer l'utilisateur courant
-          const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
-          if (!currentUser.id) throw new Error('Non authentifié')
+      try {
+        // Récupérer l'utilisateur courant
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+        if (!currentUser.id) throw new Error('Non authentifié')
 
-          // Sauvegarder le profil dans localStorage
-          const profiles = JSON.parse(localStorage.getItem('profiles') || '{}')
-          profiles[currentUser.id] = {
+        // Sauvegarder le profil dans Supabase
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: currentUser.id,
             ...profile.value,
             updated_at: new Date().toISOString()
+          })
+
+        if (error) throw error
+
+        message.value = 'Profil sauvegardé avec succès!'
+        emit('profile-updated', profile.value)
+
+        setTimeout(() => {
+          message.value = ''
+          if (!isError.value) {
+            closeModal()
           }
-          localStorage.setItem('profiles', JSON.stringify(profiles))
-
-          message.value = 'Profil sauvegardé avec succès!'
-          emit('profile-updated', profile.value)
-
-          setTimeout(() => {
-            message.value = ''
-            if (!isError.value) {
-              closeModal()
-            }
-          }, 1500)
-        } catch (err) {
-          message.value = err.message
-          isError.value = true
-        } finally {
-          loading.value = false
-        }
-      }, 300)
+        }, 1500)
+      } catch (err) {
+        message.value = err.message
+        isError.value = true
+      } finally {
+        loading.value = false
+      }
     }
 
     const closeModal = () => {
