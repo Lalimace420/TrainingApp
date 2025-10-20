@@ -9,6 +9,7 @@
       :isOpen="true"
       :isFirstTime="true"
       :initialProfile="userProfile"
+      :userId="user.id"
       @close="() => {}"
       @profile-updated="handleProfileUpdated"
       @logout="handleLogout"
@@ -21,6 +22,7 @@
         :isOpen="showProfileModal"
         :isFirstTime="false"
         :initialProfile="userProfile"
+        :userId="user.id"
         @close="showProfileModal = false"
         @profile-updated="handleProfileUpdated"
         @logout="handleLogout"
@@ -559,15 +561,54 @@ export default {
       }
     }
 
-    const handleProfileUpdated = (updatedProfile) => {
+    const handleProfileUpdated = async (updatedProfile) => {
       userProfile.value = { ...updatedProfile }
+      
+      console.log('🔍 USER:', user.value)  // ← AJOUTE ÇA
+      console.log('🔍 USER ID:', user.value?.id)  // ← AJOUTE ÇA
+      
+      // Sauvegarder dans Supabase
+      if (user.value) {
+        try {
+          const profileData = {
+            id: user.value.id,
+            full_name: updatedProfile.full_name,
+            current_weight: updatedProfile.current_weight,
+            target_weight: updatedProfile.target_weight,
+            height: updatedProfile.height,
+            age: updatedProfile.age,
+            goal: updatedProfile.goal,
+            sessions_per_week: updatedProfile.sessions_per_week,
+            updated_at: new Date().toISOString()
+          }
+          
+          console.log('🔍 PROFILE DATA TO SAVE:', profileData)  // ← AJOUTE ÇA
+          
+          const { error } = await supabase
+            .from('profiles')
+            .upsert(profileData)
+          
+          if (error) {
+            console.error('❌ Error saving profile:', error)
+            alert('Erreur lors de la sauvegarde du profil: ' + error.message)
+            return
+          }
+          
+          console.log('✅ Profile saved successfully!')
+        } catch (err) {
+          console.error('❌ Error:', err)
+          alert('Erreur: ' + err.message)
+          return
+        }
+      }
+      
       isFirstTimeUser.value = false
       showProfileModal.value = false
 
       // Régénérer les workouts de la semaine courante avec le nouveau nombre de séances
       const weekKey = `week_${currentWeek.value}`
-      delete weeklyPlans.value[weekKey]  // Supprimer le plan existant
-      weeklyWorkouts.value = getWeeklyWorkouts()  // Régénérer
+      delete weeklyPlans.value[weekKey]
+      weeklyWorkouts.value = await getWeeklyWorkouts()
     }
 
     const handleWeightUpdated = (newWeight) => {

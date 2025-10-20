@@ -92,6 +92,10 @@ export default {
     initialProfile: {
       type: Object,
       default: () => ({})
+    },
+      userId: {  // ← AJOUTE ÇA
+      type: String,
+      required: true
     }
   },
   emits: ['close', 'profile-updated', 'logout'],
@@ -122,15 +126,13 @@ export default {
       isError.value = false
 
       try {
-        // Récupérer l'utilisateur courant
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
-        if (!currentUser.id) throw new Error('Non authentifié')
+        if (!props.userId) throw new Error('Non authentifié')
 
         // Sauvegarder le profil dans Supabase
         const { error } = await supabase
           .from('profiles')
           .upsert({
-            id: currentUser.id,
+            id: props.userId,
             ...profile.value,
             updated_at: new Date().toISOString()
           })
