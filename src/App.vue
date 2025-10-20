@@ -229,14 +229,19 @@ export default {
 
     // Générer ou récupérer le plan de la semaine
     const getWeeklyWorkouts = async () => {
-      if (!userProfile.value.sessions_per_week) {
+      // Ne pas générer si le profil n'est pas encore configuré
+      if (!userProfile.value.sessions_per_week || !user.value) {
+        console.log('❌ Pas de profil configuré')
         return []
       }
 
       const weekKey = `week_${currentWeek.value}`
+      
+      console.log('🔍 Génération workouts pour:', weekKey, 'User:', user.value.id)
 
       // Si le plan existe déjà pour cette semaine, l'utiliser
       if (weeklyPlans.value[weekKey]) {
+        console.log('✅ Plan existant trouvé')
         return weeklyPlans.value[weekKey]
       }
 
@@ -250,11 +255,12 @@ export default {
           .single()
 
         if (data && !error) {
+          console.log('✅ Plan chargé depuis Supabase')
           weeklyPlans.value[weekKey] = data.plan_data
           return data.plan_data
         }
       } catch (err) {
-        console.log('No saved plan, generating new one')
+        console.log('⚠️ Pas de plan sauvegardé, génération nouveau')
       }
 
       // Sinon, générer un nouveau plan
@@ -262,25 +268,35 @@ export default {
       const previousWeek = `week_${currentWeek.value - 1}`
       const previousWorkoutIds = weeklyPlans.value[previousWeek]?.map(w => w.id) || []
 
+      console.log('🔄 Génération nouveau plan avec', sessionsPerWeek, 'séances')
       const newPlan = generateWeeklyPlan(sessionsPerWeek, previousWorkoutIds)
+      console.log('✅ Plan généré:', newPlan)
+      
       weeklyPlans.value[weekKey] = newPlan
 
       // Sauvegarder dans Supabase
       if (user.value) {
-        await supabase.from('weekly_plans').upsert({
-          user_id: user.value.id,
-          week_number: currentWeek.value,
-          plan_data: newPlan
-        })
+        try {
+          await supabase.from('weekly_plans').upsert({
+            user_id: user.value.id,
+            week_number: currentWeek.value,
+            plan_data: newPlan
+          })
+          console.log('✅ Plan sauvegardé dans Supabase')
+        } catch (err) {
+          console.error('❌ Erreur sauvegarde Supabase:', err)
+        }
       }
 
       return newPlan
     }
 
     // Computed pour les workouts de la semaine actuelle
-    const workouts = computed(() => {
-      return getWeeklyWorkouts()
-    })
+    const workouts = ref([])
+    
+    const loadWorkouts = async () => {
+      workouts.value = await getWeeklyWorkouts()
+    }
 
     const meals = [
       {
@@ -511,6 +527,9 @@ export default {
       // Charger les workouts complétés
       completedWorkouts.value = await loadCompletedWorkouts()
       
+      // Charger les workouts de la semaine
+      await loadWorkouts()  // ← AJOUTE ÇA
+      
       // Charger les préférences (dark mode)
       try {
         const { data } = await supabase
@@ -562,54 +581,47 @@ export default {
     }
 
     const handleProfileUpdated = async (updatedProfile) => {
-      userProfile.value = { ...updatedProfile }
+  userProfile.value = { ...updatedProfile }
+  
+  // Sauvegarder dans Supabase
+  if (user.value) {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.value.id,
+          full_name: updatedProfile.full_name,
+          current_weight: updatedProfile.current_weight,
+          target_weight: updatedProfile.target_weight,
+          height: updatedProfile.height,
+          age: updatedProfile.age,
+          goal: updatedProfile.goal,
+          sessions_per_week: updatedProfile.sessions_per_week,
+          updated_at: new Date().toISOString()
+        })
       
-      console.log('🔍 USER:', user.value)  // ← AJOUTE ÇA
-      console.log('🔍 USER ID:', user.value?.id)  // ← AJOUTE ÇA
-      
-      // Sauvegarder dans Supabase
-      if (user.value) {
-        try {
-          const profileData = {
-            id: user.value.id,
-            full_name: updatedProfile.full_name,
-            current_weight: updatedProfile.current_weight,
-            target_weight: updatedProfile.target_weight,
-            height: updatedProfile.height,
-            age: updatedProfile.age,
-            goal: updatedProfile.goal,
-            sessions_per_week: updatedProfile.sessions_per_week,
-            updated_at: new Date().toISOString()
-          }
-          
-          console.log('🔍 PROFILE DATA TO SAVE:', profileData)  // ← AJOUTE ÇA
-          
-          const { error } = await supabase
-            .from('profiles')
-            .upsert(profileData)
-          
-          if (error) {
-            console.error('❌ Error saving profile:', error)
-            alert('Erreur lors de la sauvegarde du profil: ' + error.message)
-            return
-          }
-          
-          console.log('✅ Profile saved successfully!')
-        } catch (err) {
-          console.error('❌ Error:', err)
-          alert('Erreur: ' + err.message)
-          return
-        }
+      if (error) {
+        console.error('Error saving profile:', error)
+        alert('Erreur lors de la sauvegarde du profil: ' + error.message)
+        return
       }
       
-      isFirstTimeUser.value = false
-      showProfileModal.value = false
-
-      // Régénérer les workouts de la semaine courante avec le nouveau nombre de séances
-      const weekKey = `week_${currentWeek.value}`
-      delete weeklyPlans.value[weekKey]
-      weeklyWorkouts.value = await getWeeklyWorkouts()
+      console.log('Profile saved successfully!')
+    } catch (err) {
+      console.error('Error:', err)
+      alert('Erreur: ' + err.message)
+      return
     }
+  }
+  
+  isFirstTimeUser.value = false
+  showProfileModal.value = false
+
+  // Régénérer les workouts de la semaine courante
+  const weekKey = `week_${currentWeek.value}`
+  delete weeklyPlans.value[weekKey]
+  await loadWorkouts()  // ← CHANGE ÇA
+}
 
     const handleWeightUpdated = (newWeight) => {
       userProfile.value.current_weight = newWeight
@@ -649,8 +661,8 @@ export default {
     })
 
     // Watcher pour regénérer les workouts quand on change de semaine ou de nombre de séances
-    watch([currentWeek, () => userProfile.value.sessions_per_week], () => {
-      weeklyWorkouts.value = getWeeklyWorkouts()
+    watch([currentWeek, () => userProfile.value.sessions_per_week], async () => {
+      await loadWorkouts()  // ← CHANGE ÇA
     })
 
     return {
@@ -673,7 +685,8 @@ export default {
       showProfileModal,
       isFirstTimeUser,
       darkMode,
-      toggleDarkMode
+      toggleDarkMode,
+      loadWorkouts  // ← AJOUTE ÇA
     }
   }
 }
