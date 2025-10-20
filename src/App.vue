@@ -1418,41 +1418,75 @@ main {
 
 @media (max-width: 768px) {
   h1 {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .header-top {
     flex-direction: column;
     text-align: center;
     padding: 0;
+    gap: 10px;
   }
 
   .header-buttons {
     width: 100%;
     justify-content: center;
+    flex-wrap: wrap;
   }
 
+  .btn-dark-mode,
   .btn-edit-profile,
   .btn-logout-header {
-    flex: 1;
-    max-width: 150px;
+    font-size: 12px;
+    padding: 8px 12px;
   }
 
   .stats {
     flex-direction: column;
+    gap: 12px;
   }
 
   .stat-card {
     width: 100%;
+    padding: 15px 20px;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .tabs button {
+    flex: 0 0 auto;
+    min-width: 120px;
+    padding: 12px 16px;
+    font-size: 14px;
+    white-space: nowrap;
   }
 
   .week-selector {
     flex-direction: column;
     gap: 15px;
+    padding: 20px;
   }
 
   .week-selector button {
     width: 100%;
+    font-size: 14px;
+  }
+
+  .week-selector h2 {
+    font-size: 22px;
+  }
+
+  .workout-card {
+    padding: 20px;
+  }
+
+  .workout-header h3 {
+    font-size: 18px;
   }
 
   .meal-options {
