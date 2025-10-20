@@ -489,7 +489,7 @@ export default {
     }
 
     const handleLogout = () => {
-      localStorage.removeItem('currentUser')
+      
       user.value = null
       userProfile.value = {
         full_name: '',
@@ -518,32 +518,6 @@ export default {
       const savedDarkMode = localStorage.getItem('darkMode')
       if (savedDarkMode === 'true') {
         darkMode.value = true
-      }
-
-      // Charger l'utilisateur connecté si présent
-      const savedUser = localStorage.getItem('currentUser')
-      if (savedUser) {
-        try {
-          const parsedUser = JSON.parse(savedUser)
-
-          // Vérifier que l'utilisateur existe toujours dans Supabase
-          const { data: userData } = await supabase
-            .from('custom_users')
-            .select('id, username')
-            .eq('id', parsedUser.id)
-            .single()
-
-          if (userData) {
-            user.value = parsedUser
-            await loadUserProfile()
-          } else {
-            // Utilisateur n'existe plus, nettoyer
-            localStorage.removeItem('currentUser')
-          }
-        } catch (e) {
-          // Données corrompues ou erreur, nettoyer
-          localStorage.removeItem('currentUser')
-        }
       }
     })
 

@@ -98,7 +98,7 @@ export default {
           }
 
           // Sauvegarder en localStorage pour la persistance
-          localStorage.setItem('currentUser', JSON.stringify(user))
+          
 
           emit('authenticated', user)
         } else {
@@ -137,7 +137,7 @@ export default {
             username: newUser.username
           }
 
-          localStorage.setItem('currentUser', JSON.stringify(user))
+          
 
           setTimeout(() => {
             emit('authenticated', user)
